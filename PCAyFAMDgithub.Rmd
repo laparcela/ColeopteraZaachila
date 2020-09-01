@@ -1,0 +1,93 @@
+---
+Este script categoriza las parcelas como "tradicionales" o "industrializadas" de acuerdo a un an??lisis PCA y un MDA.
+---
+
+paquetes
+```{r}
+library("FactoMineR", lib.loc="/Library/Frameworks/R.framework/Versions/3.4/Resources/library")
+library("corrplot", lib.loc="/Library/Frameworks/R.framework/Versions/3.0/Resources/library")
+library("RColorBrewer", lib.loc="/Library/Frameworks/R.framework/Versions/3.4/Resources/library")
+```
+
+leer bases de datos
+```{r}
+#Para PCA 
+Manejo<-read.table("Manejo1.csv", sep=",", header=TRUE) #entra tabla con las variables como columnas y las parcelas en los renglones. valores 1= presencia, 0=ausencia (excepto number crops y number varieties)
+Manejo <- Manejo[c(-2,-3)] #elimino columnas con nombres de cultivos y variedades
+Manejo$agricultor<-NULL #que por ahora no tome en cuenta a columna con el nombre del agricultor
+
+#Para FAMD
+ManejoMixed<-read.table("ManejoMixed.csv", sep=",", header=TRUE) #esta es igual a MANEJO1.CSV pero con los valores de presencia/ausencia transformados a variables categ??ricas.
+ManejoMixed <- ManejoMixed[c(-2,-3)] #elimino columnas con nombres de cultivos y variedades
+ManejoMixed$agricultor<-NULL
+Manejo
+```
+#PCA
+
+Grafica de correlacion
+```{r}
+cor.vine<-round(cor(Manejo, method="pearson"),2)
+cor.vine2<-round(cor(Manejo, method="spearman"),2)
+cor.vine3<-round(cor(Manejo, method="kendall"),2)
+corrplot(cor.vine,type="upper",order="hclust", tl.col="black")
+corrplot(cor.vine2,type="upper",order="hclust", tl.col="black")
+corrplot(cor.vine3,type="upper",order="hclust", tl.col="black")
+```
+#PCA
+```{r}
+pca<-prcomp(Manejo, scale=TRUE)
+summary(pca)
+res.var <- get_pca_var(pca)
+res.var$coord
+res.var$cor
+res.var$contrib
+```
+
+```{r}
+pca$rotation #da los loadings (coeficientes) asociados a cada variable, o sea el peso que cada una tuvo en dicho componente principal
+#pca$x #x es el valor que resulta de sustituir en cada componente principal el dato original multiplicado por el coeficiente asociado a esa variable
+corrplot(pca$rotation)#graf de loadings con bolitas monas
+```
+
+#Gr??ficos del PCA
+```{r}
+library("ggplot2", lib.loc="/Library/Frameworks/R.framework/Versions/3.4/Resources/library")
+library("tidyselect", lib.loc="/Library/Frameworks/R.framework/Versions/3.4/Resources/library")
+library("factoextra", lib.loc="/Library/Frameworks/R.framework/Versions/3.4/Resources/library")
+fviz_contrib(pca, "var", axes = 1) + theme(axis.text.x = element_text(size=13, angle=90))
+```
+```{r}
+fviz_pca_var(pca, col.var="contrib",gradient.cols = c("#00AFBB", "#e7cc00", "#f50707"),repel = TRUE)
+```
+
+
+```{r}
+fviz_contrib(pca, "var", axes = 2)+ theme(axis.text.x = element_text(size=13, angle=45))
+```
+
+```{r}
+Manejo<-read.table("Manejo1.csv", sep=",", header=TRUE) 
+Manejo <- Manejo[c(-2,-3)] #elimino columnas con nombres de cultivos y variedades
+biplot(pca, scale=0, xlabs=Manejo$agricultor)
+```
+Screeplot
+```{r}
+std_dev <- pca$sdev
+pr_var <- std_dev^2
+prop_varex <- pr_var/sum(pr_var)
+#plot(prop_varex, xlab = "Principal Component",ylab = "Proportion of Variance Explained",type = "b")
+#screeplot cumulativo
+plot(cumsum(prop_varex), xlab = "Principal Component",ylab = "Cumulative Proportion of Variance Explained",type = "b")
+```
+#Mixed Data Analysis
+
+MDA:
+```{r}
+MDA<-FAMD (ManejoMixed)
+summary(MDA)
+
+```
+
+```{r}
+MDA$var
+```
