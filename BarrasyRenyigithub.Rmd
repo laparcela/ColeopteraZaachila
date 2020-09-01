@@ -1,0 +1,275 @@
+---
+Este script compara el tratamiento industrial y el tradicional. Primero se hace por medio de gráficas de barras, después se calculan manualmente varios índices de diversidad y finalmente se hace un análisis de Renyi.
+---
+
+##Graficas de barras por tratamiento, FAMILIA y abundancia en REDES
+```{r}
+
+b<-tapply(ColeoRed$abundancia, list(ColeoRed$familia, ColeoRed$tratamiento), sum)#abundancia de indiv por familia y tratamiento. La base de datos "ColeoRed" se crea en el script "Coleogithub.rmd" a partir de la base de datos general.
+var<-c("0","1")
+b[,var] <- sapply(b[,var],function(x) ifelse(is.na(x),0,x))
+par(mar=c(2.4, 3, 2, 8))
+barplot(b, legend=rownames(b), col=brewer.pal(nrow(b),"Accent"), args.legend=list(x=3, y=550, bty="L", cex=.6), las=1, main="Abundancia de familias por tratamiento en redes")
+```
+
+Las familias Chrysomelidae y Cantharidae son m??s abundantes en el tratamiento 0, mientras que Curculionidae, Cleridae y Bruchidae son m??s abundantes en el 1.
+
+```{r}
+c<-tapply(ColeoRed$abundancia, list(ColeoRed$tratamiento, ColeoRed$familia), sum)#abundancia de indiv por familia y tratamiento
+c[1,] <- sapply(c[1,],function(x) ifelse(is.na(x),0,x))
+c[2,] <- sapply(c[2,],function(x) ifelse(is.na(x),0,x))
+par(mar=c(7.2, 3, 1, 1))
+barplot(c, legend=rownames(c),col=c(8,6),las=2, main="abundancia de familias por tratamiento en redes")
+```
+
+quitar chrysomelidae y cantharidae para ver mejor:
+
+```{r}
+par(mar=c(7.2, 3, 1, 1))
+c[,9]<-0
+c[,7]<-0
+barplot(c, legend=rownames(c),col=c("#6391cf", "#c45152"),las=2 ) #main="abundancia de familias por tratamiento en redes"
+```
+
+Bostrichidae, Buprestidae, Lampyridae, Languriidae y Tenebrionidae son espec??ficos del tratamiento 1. Trogositidae es del tratamiento 0.
+
+##Ahora barras a nivel MORFOESPECIE y en REDES
+```{r}
+myfunction <- function(x){
+  result<-length(unique(x))
+  return(result)
+}
+d<-tapply(ColeoRed$tipo, list(ColeoRed$familia, ColeoRed$tratamiento),myfunction )#riqueza de morfoespecies por familia en redes
+d[,var] <- sapply(d[,var],function(x) ifelse(is.na(x),0,x))
+par(mar=c(2.5, 7, 2, 8))
+barplot(d, legend=rownames(d),col=brewer.pal(nrow(d),"Accent"), args.legend=list(x=3.2, bty="L", cex=.6), las=1, ylab="Morph richness")
+```
+
+En el tratamiento 1 hay mayor rqueza de morfoespecies en general, dentro de cada familia
+```{r}
+e<-tapply(ColeoRed$tipo, list(ColeoRed$tratamiento, ColeoRed$familia),myfunction )
+e[1,] <- sapply(e[1,],function(x) ifelse(is.na(x),0,x))
+e[2,] <- sapply(e[2,],function(x) ifelse(is.na(x),0,x))
+par(mar=c(7.2, 3, 1, 1))
+barplot(e, legend=rownames(e),col=c(8,5),las=2, main="riqueza de morfoespecies")
+```
+
+#Barras por tratamiento, FAMILIA y abundancia en PITFALLS
+
+```{r}
+f<-tapply(ColeoPit$abundancia, list(ColeoPit$familia, ColeoPit$tratamiento), sum)#abundancia de indiv por familia y tratamiento
+f[,var] <- sapply(f[,var],function(x) ifelse(is.na(x),0,x))
+par(mar=c(2.5, 3, 3, 10))
+barplot(f, legend=rownames(f), col=brewer.pal(nrow(f),"Accent"), args.legend=list(x=3,  bty="L", cex=.6), las=1, main="Abundancia de familias por tratamiento en pitfalls")
+```
+```{r}
+g<-tapply(ColeoPit$abundancia, list(ColeoPit$tratamiento, ColeoPit$familia), sum)#abundancia de indiv por familia y tratamiento
+g[1,] <- sapply(g[1,],function(x) ifelse(is.na(x),0,x))
+g[2,] <- sapply(g[2,],function(x) ifelse(is.na(x),0,x))
+par(mar=c(7.2, 3, 1, 1))
+barplot(g, legend=rownames(c),col=c(8,6),args.legend=list(x=6,  bty="L"),las=2, main="Abundancia de familias por tratamiento en pitfalls")
+```
+
+Quitando Staphylinidae, Scolytidae y Nitidulidae para ver mejor:
+```{r}
+par(mar=c(7.2, 3, 1, 1))
+g[,19]<-0
+g[,22]<-0
+g[,23]<-0
+barplot(g, legend=rownames(c),col=c(8,6),las=2, main="abundancia de familias por tratamiento en pitfalls")
+```
+
+##Barras por tratamiento, familia y riqueza de MORFOESPECIES en PITFALLS
+
+```{r}
+h<-tapply(ColeoPit$tipo, list(ColeoPit$familia, ColeoPit$tratamiento),myfunction )
+h[,var] <- sapply(h[,var],function(x) ifelse(is.na(x),0,x))
+par(mar=c(2.5, 6, 3, 8))
+barplot(h, legend=rownames(h),col=brewer.pal(nrow(h),"Accent"), args.legend=list(x=3.1, bty="L", cex=.6), main="Riqueza de morfoespecies en cada familia por tratamiento en pitfalls",las=1)
+```
+```{r}
+i<-tapply(ColeoPit$tipo, list(ColeoPit$tratamiento, ColeoPit$familia),myfunction )
+i[1,] <- sapply(i[1,],function(x) ifelse(is.na(x),0,x))
+i[2,] <- sapply(i[2,],function(x) ifelse(is.na(x),0,x))
+par(mar=c(7.2, 3, 3, 1))
+barplot(i, legend=rownames(i),col=c(8,6),args.legend=list(x=6, bty="L"),las=2, main="Riqueza de morfoespecies en cada familia por tratamiento en pitfalls")
+```
+
+
+#indices por TRATAMIENTO 
+
+##indices de diversidad para las FAMILIAS en REDES
+```{r}
+#trabaja con b
+#num efectivo, equidad, shannon, riq y chao
+trat0<-numeric()
+trat1<-numeric()
+for(i in 1:25){
+  trat0 <- c(trat0, b[i,1])
+  trat1 <- c(trat1, b[i,2])
+}
+```
+
+shannon 0 y 1
+```{r}
+pi0<-trat0/sum(trat0)
+pilnpi0<-pi0*log(pi0)
+pilnpi0[is.nan(pilnpi0)]<-0
+shannon0<-sum(pilnpi0)*-1
+pi1<-trat1/sum(trat1)
+pilnpi1<-pi1*log(pi1)
+pilnpi1[is.nan(pilnpi1)]<-0
+shannon1<-sum(pilnpi1)*-1
+shannon0
+shannon1
+```
+
+equidad 0 y 1
+```{r}
+#dividir shannon entre ln del num de familias
+equi0<-shannon0/log(20)
+equi1<-shannon1/log(24)
+equi0
+equi1
+```
+
+numero efectivo de especies
+```{r}
+numef0<-exp(shannon0)
+numef1<-exp(shannon1)
+numef0
+numef1
+```
+
+riqueza y chao
+```{r}
+#riqueza de familias 0 (s0.0) es 20
+#riqueza de familias 1 (s0.1) es 24
+#Chao: s1=s0+(F1^2/2*F2)
+s0.0<-20
+F1.0<-sum(trat0==1)
+F2.0<-sum(trat0==2)
+chao0<-s0.0+((F1.0^2)/(2*F2.0))
+
+s0.1<-24
+F1.1<-sum(trat1==1)
+F2.1<-sum(trat1==2)
+chao1<-s0.1+((F1.1^2)/(2*F2.1))
+"riqueza 0 es 20"
+"riqueza 1 es 24"
+"chao 0 es" 
+chao0
+"chao 1 es" 
+chao1
+
+```
+
+En redes y a nivel de familia, todos los indices (shannon, equidad y num efectivo) son mayores para el tratamiento tradicional. La riqueza es mayor en el tradicional aunque con Chao resultan iguales.
+
+##Indices MORFOESPECIES-REDES
+```{r}
+#trabajar con:
+morf.trat.red<-tapply(ColeoRed$abundancia, list(ColeoRed$tipo,ColeoRed$tratamiento), sum)#abundancia de morfoespecies por tratamiento en redes
+#num efectivo, equidad, shannon, riq y chao
+trat0<-numeric()
+trat1<-numeric()
+for(i in 1:77){
+  trat0 <- c(trat0, morf.trat.red[i,1])
+  trat1 <- c(trat1, morf.trat.red[i,2])
+}
+trat0[is.na(trat0)] <- 0
+trat1[is.na(trat1)] <- 0
+```
+
+shannon 0 y 1
+```{r}
+pi0<-trat0/sum(trat0)
+pilnpi0<-pi0*log(pi0)
+pilnpi0[is.nan(pilnpi0)]<-0
+shannon0<-sum(pilnpi0)*-1
+pi1<-trat1/sum(trat1)
+pilnpi1<-pi1*log(pi1)
+pilnpi1[is.nan(pilnpi1)]<-0
+shannon1<-sum(pilnpi1)*-1
+shannon0
+shannon1
+```
+
+equidad 0 y 1
+```{r}
+#dividir shannon entre ln del num de morfoespecies
+equi0<-shannon0/log(length(trat0)-sum(trat0==0))
+equi1<-shannon1/log(length(trat1)-sum(trat1==0))
+equi0
+equi1
+```
+
+numero efectivo de especies
+```{r}
+numef0<-exp(shannon0)
+numef1<-exp(shannon1)
+numef0
+numef1
+```
+
+riqueza y chao
+```{r}
+#riqueza de especies 0  es length(trat0)-sum(trat0==0)
+#riqueza de especies 1 es length(trat1)-sum(trat1==0)
+#Chao: s1=s0+(F1^2/2*F2)
+s0.0<-length(trat0)-sum(trat0==0)
+F1.0<-sum(trat0==1)
+F2.0<-sum(trat0==2)
+chao0<-s0.0+((F1.0^2)/(2*F2.0))
+
+s0.1<-length(trat1)-sum(trat1==0)
+F1.1<-sum(trat1==1)
+F2.1<-sum(trat1==2)
+chao1<-s0.1+((F1.1^2)/(2*F2.1))
+"riqueza 0 y 1"
+length(trat0)-sum(trat0==0)
+length(trat1)-sum(trat1==0)
+"chao 0 y 1"
+chao0
+chao1
+
+```
+
+Diversidad de Renyi
+
+```{r}
+library("vegan", lib.loc="/Library/Frameworks/R.framework/Versions/3.4/Resources/library")
+library("BiodiversityR", lib.loc="/Library/Frameworks/R.framework/Versions/3.4/Resources/library")
+datosred<-read.table("renyired.csv", sep=",", header=TRUE) #"renyired" contiene los morfos como columnas, los tratamientos como renglones (industrial y tradicional), y los valores en cada celda son abundancias
+datosred <- datosred[c(-1)]#elimino columna con nombres
+R<-renyiresult(datosred,method="s")
+renyiplot(R, evenness=FALSE, addit=FALSE, pch=1,col='1', rainbow=TRUE, cex=1, legend=FALSE)
+
+R
+
+
+```
+
+Numeros de Hill
+```{r}
+
+library(SpadeR) 
+
+base<-read.table("renyired.csv", sep=",", header=TRUE)
+
+# Es necesario transponer el dataframe para calcular los numeros de hills 
+Hill_base<-setNames(data.frame(t(base[,-1])), base[,1])# Base traspuesta 
+
+Hill_com1<-Diversity(Hill_base$agroecologico,"abundance",q=c(0,0.25,0.5,1,2,4,8)) # "q" es un num de 0 a 2, que le da distinto peso a la abundancia a las spp, y por lo tanto mayor o menor sensibilidad. 0 es riqueza, 1, es exp(shannon) y 2 es el inverso de simpson.
+Hill_com1$Hill_numbers
+
+Hill_com2<-Diversity(Hill_base$industrializado,"abundance",q=c(0,0.25,0.5,1,2,4,8))
+Hill_com2$Hill_numbers
+
+# si los intervalos de confianza se superponen no hay diferencias significativas en la diversidad de artr??podos entre la comunidad 1 y 2.
+
+
+```
+
+
+
