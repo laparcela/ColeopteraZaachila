@@ -1,0 +1,817 @@
+---
+Este script primero produce los boxplots de la diversidad de cole??petos entre el tratamiento industrial (0) y el tradicional (1), tambi??n hace pruebas ANOVA para la significancia de esas diferencias.
+---
+
+#Settings
+
+paquetes
+```{r}
+library("FactoMineR", lib.loc="/Library/Frameworks/R.framework/Versions/3.4/Resources/library")
+library("corrplot", lib.loc="/Library/Frameworks/R.framework/Versions/3.0/Resources/library")
+library("RColorBrewer", lib.loc="/Library/Frameworks/R.framework/Versions/3.4/Resources/library")
+```
+
+
+leer bases de datos
+```{r}
+#General
+#setwd("~/Dropbox/maestr??a") 
+Coleoptera<-read.table("ColeoSinHilarion.csv", sep=",", header=TRUE) #base de datos general con los coleopteros contados e identificados en cad aparcela. Se elimin?? la parcela "hilari??n".
+Coleo <- Coleoptera[c(-10,-11, -12, -13)] #elimino columnas que no utilizar??: otros, tama??o, enfrascado y notas
+Coleo$abundancia <- as.numeric(Coleo$abundancia)
+
+```
+
+hago columna tratamiento
+Creo columna tratamiento dond epongo un 0 si la parcela tiene un manejo industrial y un 1 si tiene un manejo tradicional
+```{r}
+Coleo$tratamiento<- c(0)
+for (i in 1:length(Coleo$orden)) {
+  if(Coleo$agricultor[i] == "Carlos" | Coleo$agricultor[i] =="Chano"| Coleo$agricultor[i] =="Heliodoro"| Coleo$agricultor[i] =="Mario"| Coleo$agricultor[i] =="Noe"| Coleo$agricultor[i] =="Ray"| Coleo$agricultor[i] =="Yolanda") {
+    Coleo$tratamiento[i]<- 1
+  }
+}
+Coleo$tratamiento<-as.factor(Coleo$tratamiento)
+
+```
+Subsets de muestreo con  Red y Pitfall
+```{r}
+ColeoRed<-subset(Coleo, muestreo == "r")
+ColeoRed<-droplevels(ColeoRed)
+ColeoRed$abundancia <- as.numeric(ColeoRed$abundancia)
+ColeoPit<-subset(Coleo, muestreo == "p")
+ColeoPit<-droplevels(ColeoPit)
+ColeoPit$abundancia <- as.numeric(ColeoPit$abundancia)
+
+```
+Settings para la riqueza total
+```{r}
+abun<-aggregate(Coleo$abundancia, by=list(Coleo$agricultor,Coleo$tratamiento), sum)#abundancias por agricultor y por tratamiento
+#hago matriz a rellenar
+riq<-abun
+riq$fam<- c(0)
+riq$esp<-c(0)
+#subsets por agricultor
+Carlos<-subset(Coleo, agricultor=="Carlos")
+Chacon<-subset(Coleo, agricultor=="Chacon")
+Chano<-subset(Coleo, agricultor=="Chano")
+Chico<-subset(Coleo, agricultor=="Chico")
+Florentino<-subset(Coleo, agricultor=="Florentino")
+Heliodoro<-subset(Coleo, agricultor=="Heliodoro")
+Jorge<-subset(Coleo, agricultor=="Jorge")
+JoseLuis <-subset(Coleo, agricultor=="Jose Luis")
+Luis<-subset(Coleo, agricultor=="Luis")
+Mario<-subset(Coleo, agricultor=="Mario")
+Noe<-subset(Coleo, agricultor=="Noe")
+PedroPablo <-subset(Coleo, agricultor=="Pedro Pablo")
+Ray<-subset(Coleo, agricultor=="Ray")
+Yolanda<-subset(Coleo, agricultor=="Yolanda")
+Zenon<-subset(Coleo, agricultor=="Zenon")
+#riqueza de  cada agricultor (RF riq de especies, Rfam riq de familias... je)
+CarlosRF=length(unique(Carlos$tipo))
+ChaconRF=length(unique(Chacon$tipo))
+ChanoRF=length(unique(Chano$tipo))
+ChicoRF=length(unique(Chico$tipo))
+FlorentinoRF=length(unique(Florentino$tipo))
+HeliodoroRF=length(unique(Heliodoro$tipo))
+JorgeRF=length(unique(Jorge$tipo))
+JoseLuisRF=length(unique(JoseLuis$tipo))
+LuisRF=length(unique(Luis$tipo))
+MarioRF=length(unique(Mario$tipo))
+NoeRF=length(unique(Noe$tipo))
+PedroPabloRF=length(unique(PedroPablo$tipo))
+RayRF=length(unique(Ray$tipo))
+YolandaRF=length(unique(Yolanda$tipo))
+ZenonRF=length(unique(Zenon$tipo))
+#llenar campos de riqueza de especies
+for (i in 1:length(abun$x)) {
+  if(riq$Group.1[i] == "Carlos") {
+    riq$esp[i]<- CarlosRF
+  } else if(riq$Group.1[i]=="Chacon"){
+    riq$esp[i]<-ChaconRF
+  } else if(riq$Group.1[i]=="Chano"){
+    riq$esp[i]<-ChanoRF
+  } else if(riq$Group.1[i]=="Chico"){
+    riq$esp[i]<-ChicoRF
+  } else if(riq$Group.1[i]=="Florentino"){
+    riq$esp[i]<-FlorentinoRF
+  } else if(riq$Group.1[i]=="Heliodoro"){
+    riq$esp[i]<-HeliodoroRF
+  } else if(riq$Group.1[i]=="Jorge"){
+    riq$esp[i]<-JorgeRF
+  } else if(riq$Group.1[i]=="Jose Luis"){
+    riq$esp[i]<-JoseLuisRF
+  } else if(riq$Group.1[i]=="Luis"){
+    riq$esp[i]<-LuisRF
+  } else if(riq$Group.1[i]=="Mario"){
+    riq$esp[i]<-MarioRF
+  } else if(riq$Group.1[i]=="Noe"){
+    riq$esp[i]<-NoeRF
+  } else if(riq$Group.1[i]=="Pedro Pablo"){
+    riq$esp[i]<-PedroPabloRF
+  } else if(riq$Group.1[i]=="Ray"){
+    riq$esp[i]<-RayRF
+  } else if(riq$Group.1[i]=="Yolanda"){
+    riq$esp[i]<-YolandaRF
+  } else if(riq$Group.1[i]=="Zenon"){
+      riq$esp[i]<-ZenonRF 
+  }}
+#riqueza de familias de cada agricultor (Rfam)
+CarlosRfam=length(unique(Carlos$familia))
+ChaconRfam=length(unique(Chacon$familia))
+ChanoRfam=length(unique(Chano$familia))
+ChicoRfam=length(unique(Chico$familia))
+FlorentinoRfam=length(unique(Florentino$familia))
+HeliodoroRfam=length(unique(Heliodoro$familia))
+JorgeRfam=length(unique(Jorge$familia))
+JoseLuisRfam=length(unique(JoseLuis$familia))
+LuisRfam=length(unique(Luis$familia))
+MarioRfam=length(unique(Mario$familia))
+NoeRfam=length(unique(Noe$familia))
+PedroPabloRfam=length(unique(PedroPablo$familia))
+RayRfam=length(unique(Ray$familia))
+YolandaRfam=length(unique(Yolanda$familia))
+ZenonRfam=length(unique(Zenon$familia))  
+# llenar campos de riqueza de familias 
+for (i in 1:length(abun$x)) {
+  if(riq$Group.1[i] == "Carlos") {
+    riq$fam[i]<- CarlosRfam
+  } else if(riq$Group.1[i]=="Chacon"){
+    riq$fam[i]<-ChaconRfam
+  } else if(riq$Group.1[i]=="Chano"){
+    riq$fam[i]<-ChanoRfam
+  } else if(riq$Group.1[i]=="Chico"){
+    riq$fam[i]<-ChicoRfam
+  } else if(riq$Group.1[i]=="Florentino"){
+    riq$fam[i]<-FlorentinoRfam
+  } else if(riq$Group.1[i]=="Heliodoro"){
+    riq$fam[i]<-HeliodoroRfam
+  } else if(riq$Group.1[i]=="Jorge"){
+    riq$fam[i]<-JorgeRfam
+  } else if(riq$Group.1[i]=="Jose Luis"){
+    riq$fam[i]<-JoseLuisRfam
+  } else if(riq$Group.1[i]=="Luis"){
+    riq$fam[i]<-LuisRfam
+  } else if(riq$Group.1[i]=="Mario"){
+    riq$fam[i]<-MarioRfam
+  } else if(riq$Group.1[i]=="Noe"){
+    riq$fam[i]<-NoeRfam
+  } else if(riq$Group.1[i]=="Pedro Pablo"){
+    riq$fam[i]<-PedroPabloRfam
+  } else if(riq$Group.1[i]=="Ray"){
+    riq$fam[i]<-RayRfam
+  } else if(riq$Group.1[i]=="Yolanda"){
+    riq$fam[i]<-YolandaRfam
+  } else if(riq$Group.1[i]=="Zenon"){
+    riq$fam[i]<-ZenonRfam 
+  }}
+
+```
+Settings para la riqueza de redes
+```{r}
+#hago matriz de que llenar?? con riquezas
+
+riq$famRed<- c(0)
+riq$espRed<-c(0)
+
+#subsets de RED por agricultor
+CarlosRed<-subset(Carlos, muestreo=="r")
+ChaconRed<-subset(Chacon, muestreo=="r")
+ChanoRed<-subset(Chano, muestreo=="r")
+ChicoRed<-subset(Chico, muestreo=="r")
+FlorentinoRed<-subset(Florentino, muestreo=="r")
+HeliodoroRed<-subset(Heliodoro, muestreo=="r")
+JorgeRed<-subset(Jorge, muestreo=="r")
+JoseLuisRed <-subset(JoseLuis, muestreo=="r")
+LuisRed<-subset(Luis, muestreo=="r")
+MarioRed<-subset(Mario, muestreo=="r")
+NoeRed<-subset(Noe, muestreo=="r")
+PedroPabloRed <-subset(PedroPablo, muestreo=="r")
+RayRed<-subset(Ray, muestreo=="r")
+YolandaRed<-subset(Yolanda, muestreo=="r")
+ZenonRed<-subset(Zenon, muestreo=="r")
+
+#riqueza de especies de cada agricultor en RED
+CarlosRSRed=length(unique(CarlosRed$tipo)) 
+ChaconRSRed=length(unique(ChaconRed$tipo))
+ChanoRSRed=length(unique(ChanoRed$tipo))
+ChicoRSRed=length(unique(ChicoRed$tipo))
+FlorentinoRSRed=length(unique(FlorentinoRed$tipo))
+HeliodoroRSRed=length(unique(HeliodoroRed$tipo))
+JorgeRSRed=length(unique(JorgeRed$tipo))
+JoseLuisRSRed=length(unique(JoseLuisRed$tipo))
+LuisRSRed=length(unique(LuisRed$tipo))
+MarioRSRed=length(unique(MarioRed$tipo))
+NoeRSRed=length(unique(NoeRed$tipo))
+PedroPabloRSRed=length(unique(PedroPabloRed$tipo))
+RayRSRed=length(unique(RayRed$tipo))
+YolandaRSRed=length(unique(YolandaRed$tipo))
+ZenonRSRed=length(unique(ZenonRed$tipo))
+
+#llenar campos de riqueza de especies de red
+
+for (i in 1:length(abun$x)) {
+  if(riq$Group.1[i] == "Carlos") {
+    riq$espRed[i]<- CarlosRSRed
+  } else if(riq$Group.1[i]=="Chacon"){
+    riq$espRed[i]<-ChaconRSRed
+  } else if(riq$Group.1[i]=="Chano"){
+    riq$espRed[i]<-ChanoRSRed
+  } else if(riq$Group.1[i]=="Chico"){
+    riq$espRed[i]<-ChicoRSRed
+  } else if(riq$Group.1[i]=="Florentino"){
+    riq$espRed[i]<-FlorentinoRSRed
+  } else if(riq$Group.1[i]=="Heliodoro"){
+    riq$espRed[i]<-HeliodoroRSRed
+  } else if(riq$Group.1[i]=="Jorge"){
+    riq$espRed[i]<-JorgeRSRed
+  } else if(riq$Group.1[i]=="Jose Luis"){
+    riq$espRed[i]<-JoseLuisRSRed
+  } else if(riq$Group.1[i]=="Luis"){
+    riq$espRed[i]<-LuisRSRed
+  } else if(riq$Group.1[i]=="Mario"){
+    riq$espRed[i]<-MarioRSRed
+  } else if(riq$Group.1[i]=="Noe"){
+    riq$espRed[i]<-NoeRSRed
+  } else if(riq$Group.1[i]=="Pedro Pablo"){
+    riq$espRed[i]<-PedroPabloRSRed
+  } else if(riq$Group.1[i]=="Ray"){
+    riq$espRed[i]<-RayRSRed
+  } else if(riq$Group.1[i]=="Yolanda"){
+    riq$espRed[i]<-YolandaRSRed
+  } else if(riq$Group.1[i]=="Zenon"){
+    riq$espRed[i]<-ZenonRSRed 
+  }}
+
+
+#riqueza de familias de cada agricultor en RED (Rfam)
+
+CarlosRFRed=length(unique(CarlosRed$familia))
+ChaconRFRed=length(unique(ChaconRed$familia))
+ChanoRFRed=length(unique(ChanoRed$familia))
+ChicoRFRed=length(unique(ChicoRed$familia))
+FlorentinoRFRed=length(unique(FlorentinoRed$familia))
+HeliodoroRFRed=length(unique(HeliodoroRed$familia))
+JorgeRFRed=length(unique(JorgeRed$familia))
+JoseLuisRFRed=length(unique(JoseLuisRed$familia))
+LuisRFRed=length(unique(LuisRed$familia))
+MarioRFRed=length(unique(MarioRed$familia))
+NoeRFRed=length(unique(NoeRed$familia))
+PedroPabloRFRed=length(unique(PedroPabloRed$familia))
+RayRFRed=length(unique(RayRed$familia))
+YolandaRFRed=length(unique(YolandaRed$familia))
+ZenonRFRed=length(unique(ZenonRed$familia))  
+
+
+# llenar campos de riqueza de familias 
+
+for (i in 1:length(abun$x)) {
+  if(riq$Group.1[i] == "Carlos") {
+    riq$famRed[i]<- CarlosRFRed
+  } else if(riq$Group.1[i]=="Chacon"){
+    riq$famRed[i]<-ChaconRFRed
+  } else if(riq$Group.1[i]=="Chano"){
+    riq$famRed[i]<-ChanoRFRed
+  } else if(riq$Group.1[i]=="Chico"){
+    riq$famRed[i]<-ChicoRFRed
+  } else if(riq$Group.1[i]=="Florentino"){
+    riq$famRed[i]<-FlorentinoRFRed
+  } else if(riq$Group.1[i]=="Heliodoro"){
+    riq$famRed[i]<-HeliodoroRFRed
+  } else if(riq$Group.1[i]=="Jorge"){
+    riq$famRed[i]<-JorgeRFRed
+  } else if(riq$Group.1[i]=="Jose Luis"){
+    riq$famRed[i]<-JoseLuisRFRed
+  } else if(riq$Group.1[i]=="Luis"){
+    riq$famRed[i]<-LuisRFRed
+  } else if(riq$Group.1[i]=="Mario"){
+    riq$famRed[i]<-MarioRFRed
+  } else if(riq$Group.1[i]=="Noe"){
+    riq$famRed[i]<-NoeRFRed
+  } else if(riq$Group.1[i]=="Pedro Pablo"){
+    riq$famRed[i]<-PedroPabloRFRed
+  } else if(riq$Group.1[i]=="Ray"){
+    riq$famRed[i]<-RayRFRed
+  } else if(riq$Group.1[i]=="Yolanda"){
+    riq$famRed[i]<-YolandaRFRed
+  } else if(riq$Group.1[i]=="Zenon"){
+    riq$famRed[i]<-ZenonRFRed 
+  }}
+```
+Settings para la riqueza de pitfalls
+```{r}
+#hago matriz de que llenar?? con riquezas
+riq$famPit<- c(0)
+riq$espPit<-c(0)
+#subsets de PITFALLS por agricultor
+CarlosPit<-subset(Carlos, muestreo=="p")
+ChaconPit<-subset(Chacon, muestreo=="p")
+ChanoPit<-subset(Chano, muestreo=="p")
+ChicoPit<-subset(Chico, muestreo=="p")
+FlorentinoPit<-subset(Florentino, muestreo=="p")
+HeliodoroPit<-subset(Heliodoro, muestreo=="p")
+JorgePit<-subset(Jorge, muestreo=="p")
+JoseLuisPit <-subset(JoseLuis, muestreo=="p")
+LuisPit<-subset(Luis, muestreo=="p")
+MarioPit<-subset(Mario, muestreo=="p")
+NoePit<-subset(Noe, muestreo=="p")
+PedroPabloPit <-subset(PedroPablo, muestreo=="p")
+RayPit<-subset(Ray, muestreo=="p")
+YolandaPit<-subset(Yolanda, muestreo=="p")
+ZenonPit<-subset(Zenon, muestreo=="p")
+#riqueza de especies de cada agricultor en PITFALL
+CarlosRSPit=length(unique(CarlosPit$tipo)) 
+ChaconRSPit=length(unique(ChaconPit$tipo))
+ChanoRSPit=length(unique(ChanoPit$tipo))
+ChicoRSPit=length(unique(ChicoPit$tipo))
+FlorentinoRSPit=length(unique(FlorentinoPit$tipo))
+HeliodoroRSPit=length(unique(HeliodoroPit$tipo))
+JorgeRSPit=length(unique(JorgePit$tipo))
+JoseLuisRSPit=length(unique(JoseLuisPit$tipo))
+LuisRSPit=length(unique(LuisPit$tipo))
+MarioRSPit=length(unique(MarioPit$tipo))
+NoeRSPit=length(unique(NoePit$tipo))
+PedroPabloRSPit=length(unique(PedroPabloPit$tipo))
+RayRSPit=length(unique(RayPit$tipo))
+YolandaRSPit=length(unique(YolandaPit$tipo))
+ZenonRSPit=length(unique(ZenonPit$tipo))
+#llenar campos de riqueza de especies de pitfall
+for (i in 1:length(abun$x)) {
+  if(riq$Group.1[i] == "Carlos") {
+    riq$espPit[i]<- CarlosRSPit
+  } else if(riq$Group.1[i]=="Chacon"){
+    riq$espPit[i]<-ChaconRSPit
+  } else if(riq$Group.1[i]=="Chano"){
+    riq$espPit[i]<-ChanoRSPit
+  } else if(riq$Group.1[i]=="Chico"){
+    riq$espPit[i]<-ChicoRSPit
+  } else if(riq$Group.1[i]=="Florentino"){
+    riq$espPit[i]<-FlorentinoRSPit
+  } else if(riq$Group.1[i]=="Heliodoro"){
+    riq$espPit[i]<-HeliodoroRSPit
+  } else if(riq$Group.1[i]=="Jorge"){
+    riq$espPit[i]<-JorgeRSPit
+  } else if(riq$Group.1[i]=="Jose Luis"){
+    riq$espPit[i]<-JoseLuisRSPit
+  } else if(riq$Group.1[i]=="Luis"){
+    riq$espPit[i]<-LuisRSPit
+  } else if(riq$Group.1[i]=="Mario"){
+    riq$espPit[i]<-MarioRSPit
+  } else if(riq$Group.1[i]=="Noe"){
+    riq$espPit[i]<-NoeRSPit
+  } else if(riq$Group.1[i]=="Pedro Pablo"){
+    riq$espPit[i]<-PedroPabloRSPit
+  } else if(riq$Group.1[i]=="Ray"){
+    riq$espPit[i]<-RayRSPit
+  } else if(riq$Group.1[i]=="Yolanda"){
+    riq$espPit[i]<-YolandaRSPit
+  } else if(riq$Group.1[i]=="Zenon"){
+    riq$espPit[i]<-ZenonRSPit
+  }}
+#riqueza de familias de cada agricultor en PITFALL (Rfam)
+CarlosRFPit=length(unique(CarlosPit$familia))
+ChaconRFPit=length(unique(ChaconPit$familia))
+ChanoRFPit=length(unique(ChanoPit$familia))
+ChicoRFPit=length(unique(ChicoPit$familia))
+FlorentinoRFPit=length(unique(FlorentinoPit$familia))
+HeliodoroRFPit=length(unique(HeliodoroPit$familia))
+JorgeRFPit=length(unique(JorgePit$familia))
+JoseLuisRFPit=length(unique(JoseLuisPit$familia))
+LuisRFPit=length(unique(LuisPit$familia))
+MarioRFPit=length(unique(MarioPit$familia))
+NoeRFPit=length(unique(NoePit$familia))
+PedroPabloRFPit=length(unique(PedroPabloPit$familia))
+RayRFPit=length(unique(RayPit$familia))
+YolandaRFPit=length(unique(YolandaPit$familia))
+ZenonRFPit=length(unique(ZenonPit$familia))  
+# llenar campos de riqueza de familias 
+for (i in 1:length(abun$x)) {
+  if(riq$Group.1[i] == "Carlos") {
+    riq$famPit[i]<- CarlosRFPit
+  } else if(riq$Group.1[i]=="Chacon"){
+    riq$famPit[i]<-ChaconRFPit
+  } else if(riq$Group.1[i]=="Chano"){
+    riq$famPit[i]<-ChanoRFPit
+  } else if(riq$Group.1[i]=="Chico"){
+    riq$famPit[i]<-ChicoRFPit
+  } else if(riq$Group.1[i]=="Florentino"){
+    riq$famPit[i]<-FlorentinoRFPit
+  } else if(riq$Group.1[i]=="Heliodoro"){
+    riq$famPit[i]<-HeliodoroRFPit
+  } else if(riq$Group.1[i]=="Jorge"){
+    riq$famPit[i]<-JorgeRFPit
+  } else if(riq$Group.1[i]=="Jose Luis"){
+    riq$famPit[i]<-JoseLuisRFPit
+  } else if(riq$Group.1[i]=="Luis"){
+    riq$famPit[i]<-LuisRFPit
+  } else if(riq$Group.1[i]=="Mario"){
+    riq$famPit[i]<-MarioRFPit
+  } else if(riq$Group.1[i]=="Noe"){
+    riq$famPit[i]<-NoeRFPit
+  } else if(riq$Group.1[i]=="Pedro Pablo"){
+    riq$famPit[i]<-PedroPabloRFPit
+  } else if(riq$Group.1[i]=="Ray"){
+    riq$famPit[i]<-RayRFPit
+  } else if(riq$Group.1[i]=="Yolanda"){
+    riq$famPit[i]<-YolandaRFPit
+  } else if(riq$Group.1[i]=="Zenon"){
+    riq$famPit[i]<-ZenonRFPit
+  }}
+
+```
+
+#ABUNDANCIAS
+##total
+```{r}
+sum(Coleo$abundancia) #num de individuos total
+sort(tapply(Coleo$abundancia, Coleo$familia, sum),decreasing=TRUE) #familias ordenadas por abundancia
+
+```
+Media
+```{r}
+media<-aggregate(abun$x, by=list(abun$Group.2), mean)
+media
+
+
+```
+
+Desviacion estandard
+```{r}
+std<-aggregate(abun$x, by=list(abun$Group.2), sd)
+std
+
+```
+error estandard
+```{r}
+errorest0<-std[1,2]/(sum(abun$Group.2==0)^(1/2))
+errorest1<-std[2,2]/(sum(abun$Group.2==1)^(1/2))
+errorest0
+errorest1
+```
+
+```{r}
+boxplot(x ~ Group.2, data=abun, xlab="tratamientos", ylab="abundancia", main="abundancias totales")
+```
+
+
+
+ANOVA
+```{r}
+anova.abun <- aov(x ~ Group.2, data=abun)
+summary(anova.abun)
+anova(anova.abun)
+bartlett.test(x ~ Group.2, data=abun) #igualdad de varianzas. debe  ser no significativo
+hist(residuals(anova.abun)) #debe ser normal
+shapiro.test(residuals(anova.abun)) #normalidad, debe ser no significativo
+```
+
+
+##en redes
+```{r}
+sum(ColeoRed$abundancia) #num de individuos en redes
+sort(tapply(ColeoRed$abundancia, ColeoRed$familia, sum),decreasing=TRUE) #familias ordenadas por abundancia en redes
+```
+Media
+```{r}
+abunRed<-aggregate(ColeoRed$abundancia, by=list(ColeoRed$agricultor,ColeoRed$tratamiento), sum)#abundancias por agricultor y por tratamiento
+media<-aggregate(abunRed$x, by=list(abunRed$Group.2), mean)
+media
+
+```
+Desviacion estandard
+```{r}
+std<-aggregate(abunRed$x, by=list(abunRed$Group.2), sd)
+std
+```
+error esandard
+```{r}
+errorest0<-std[1,2]/(sum(abun$Group.2==0)^(1/2))
+errorest1<-std[2,2]/(sum(abun$Group.2==1)^(1/2))
+errorest0
+errorest1
+```
+```{r}
+boxplot(x ~ Group.2, data=abunRed, xlab="management type", ylab="abundance", main="abundance of individuals")
+```
+```{r}
+p <- ggplot(abunRed, aes(x=Group.2, y=x,fill=Group.2)) + geom_boxplot()+geom_dotplot(binaxis='y',stackdir='center', dotsize=.5)+scale_fill_manual(values=c("#6391cf", "#c45152"))+ theme(legend.position = "none")+ labs(x = "Management type", y = "Abundance")+ theme(axis.text.x = element_text(size=13))+theme(axis.title=element_text(size=15))
+p
+```
+
+
+
+
+ANOVA
+```{r}
+anova.abunRed <- aov(x ~ Group.2, data=abunRed)
+summary(anova.abunRed)
+anova(anova.abunRed)
+bartlett.test(x ~ Group.2, data=abunRed) #igualdad de varianzas. debe  ser no significativo
+hist(residuals(anova.abunRed)) #debe ser normal
+shapiro.test(residuals(anova.abunRed)) #normalidad, debe ser no significativo
+```
+
+##en pitfalls
+```{r}
+sum(ColeoPit$abundancia) #num de individuos en pitfalls
+sort(tapply(ColeoPit$abundancia, ColeoPit$familia, sum),decreasing=TRUE) #familias ordenadas por abundancia
+```
+Media
+```{r}
+abunPit<-aggregate(ColeoPit$abundancia, by=list(ColeoPit$agricultor,ColeoPit$tratamiento), sum)#abundancias por agricultor y por tratamiento
+media<-aggregate(abunPit$x, by=list(abunPit$Group.2), mean)
+media
+```
+
+Desviacion estandard
+```{r}
+std<-aggregate(abunPit$x, by=list(abunPit$Group.2), sd)
+std
+```
+Error estandard
+```{r}
+errorest0<-std[1,2]/(sum(abun$Group.2==0)^(1/2))
+errorest1<-std[2,2]/(sum(abun$Group.2==1)^(1/2))
+errorest0
+errorest1
+```
+
+```{r}
+boxplot(x ~ Group.2, data=abunPit, xlab="tratamientos", ylab="abundancia", main="abundancia en pitfalls")
+```
+ANOVA
+```{r}
+anova.abunPit <- aov(x ~ Group.2, data=abunPit)
+summary(anova.abunPit)
+anova(anova.abunPit)
+bartlett.test(x ~ Group.2, data=abunPit) #igualdad de varianzas. debe  ser no significativo
+hist(residuals(anova.abunPit)) #debe ser normal
+shapiro.test(residuals(anova.abunPit)) #normalidad, debe ser no significativo
+```
+#Riqueza
+
+##total
+Agricultores ordenados por numero de familias
+```{r}
+sort(tapply(riq$fam, riq$Group.1, sum),decreasing=TRUE) 
+```
+Agricultores ordenados por num de morfoespecies
+```{r}
+sort(tapply(riq$esp, riq$Group.1, sum),decreasing=TRUE) 
+```
+
+###riqueza de Familias por tratamiento
+
+Media:
+```{r}
+riqueza<-aggregate(riq$fam, by=list(riq$Group.1,riq$Group.2), sum)#riqueza de familias por agricultor y por tratamiento
+mediarf<-aggregate(riqueza$x, by=list(riqueza$Group.2), mean) #riq fam por tratamieno
+mediarf
+```
+Desviacion estandard
+```{r}
+stdrf<-aggregate(riqueza$x, by=list(riqueza$Group.2), sd) #sd
+stdrf
+```
+Error estandard
+```{r}
+errorest0rf<-stdrf[1,2]/(sum(abun$Group.2==0)^(1/2))
+errorest1rf<-stdrf[2,2]/(sum(abun$Group.2==1)^(1/2))
+errorest0rf
+errorest1rf
+```
+```{r}
+boxplot(x ~ Group.2, data=riqueza, xlab="tratamientos", ylab="riqueza", main="familias por tratamiento")
+```
+ANOVA
+```{r}
+anova.riqfam <- aov(x ~ Group.2, data=riqueza)
+summary(anova.riqfam)
+anova(anova.riqfam)
+bartlett.test(x ~ Group.2, data=riqueza) #igualdad de varianzas. debe  ser no significativo
+hist(residuals(anova.riqfam)) #debe ser normal
+shapiro.test(residuals(anova.riqfam)) #normalidad, debe ser no significativo
+```
+
+```{r}
+hist(riqueza$x, main="Distribucion de riqueza de familias", ylab="frecuencia", xlab="riqueza")
+```
+
+###riqueza de morfoespecies por tratamiento
+
+Media:
+```{r}
+riqueza2<-aggregate(riq$esp, by=list(riq$Group.1,riq$Group.2), sum)#riqueza de esp por agricultor y or tratamiento totales
+mediare<-aggregate(riqueza2$x, by=list(riqueza2$Group.2), mean) #riq esp por tratamieno
+mediare
+```
+Desviacion estandard
+```{r}
+stdre<-aggregate(riqueza2$x, by=list(riqueza2$Group.2), sd) #sd
+stdre
+```
+Error estandard
+```{r}
+errorest0re<-stdre[1,2]/(sum(abun$Group.2==0)^(1/2))
+errorest1re<-stdre[2,2]/(sum(abun$Group.2==1)^(1/2))
+errorest0re
+errorest1re
+```
+```{r}
+boxplot(x ~ Group.2, data=riqueza2, xlab="tratamientos", ylab="riqueza", main="morfoespecies por tratamiento")
+```
+ANOVA
+
+```{r}
+anova.riqesp <- aov(x ~ Group.2, data=riqueza2)
+summary(anova.riqesp)
+anova(anova.riqesp)
+bartlett.test(x ~ Group.2, data=riqueza2) #igualdad de varianzas. debe  ser no significativo
+hist(residuals(anova.riqesp)) #debe ser normal
+shapiro.test(residuals(anova.riqesp)) #normalidad, debe ser no significativo
+```
+
+```{r}
+hist(riqueza2$x, main="Distribucion de riqueza de morfoespecies", ylab="frecuencia", xlab="riqueza")
+```
+##Red
+Agricultores ordenados por numero de familias
+```{r}
+sort(tapply(riq$famRed, riq$Group.1, sum),decreasing=TRUE)
+```
+
+
+Agricultores ordenados por numero de morfoespecies
+```{r}
+sort(tapply(riq$espRed, riq$Group.1, sum),decreasing=TRUE)
+```
+###riqueza de Familias por tratamiento
+Media
+```{r}
+riqueza3<-aggregate(riq$famRed, by=list(riq$Group.1,riq$Group.2), sum)#riqueza de familias por agricultor y por tratamiento
+mediarf<-aggregate(riqueza3$x, by=list(riqueza3$Group.2), mean) #riq fam por tratamieno
+mediarf
+```
+Desviacion estandard
+```{r}
+stdrf<-aggregate(riqueza3$x, by=list(riqueza3$Group.2), sd) #sd
+stdrf
+```
+Error estandard
+```{r}
+errorest0rf<-stdrf[1,2]/(sum(abun$Group.2==0)^(1/2))
+errorest1rf<-stdrf[2,2]/(sum(abun$Group.2==1)^(1/2))
+errorest0rf
+errorest1rf
+```
+```{r}
+boxplot(x ~ Group.2, data=riqueza3, xlab="management type", ylab="richness", main="family richness")
+```
+
+```{r}
+p <- ggplot(riqueza3, aes(x=Group.2, y=x,fill=Group.2)) + geom_boxplot()+geom_dotplot(binaxis='y',stackdir='center', dotsize=.5)+scale_fill_manual(values=c("#6391cf", "#c45152"))+ theme(legend.position = "none")+ labs(x = "Management type", y = "Family richness")+ theme(axis.text.x = element_text(size=13))+theme(axis.title=element_text(size=15))
+p
+```
+
+
+ANOVA
+```{r}
+anova.riqfam <- aov(x ~ Group.2, data=riqueza3)
+summary(anova.riqfam)
+anova(anova.riqfam)
+bartlett.test(x ~ Group.2, data=riqueza3) #igualdad de varianzas. debe  ser no significativo
+hist(residuals(anova.riqfam)) #debe ser normal
+shapiro.test(residuals(anova.riqfam)) #normalidad, debe ser no significativo
+```
+
+```{r}
+hist(riqueza3$x, main="Distribucion de riqueza de familias", ylab="frecuencia", xlab="riqueza")
+```
+
+###riqueza de morfoespecies por tratamiento
+Media
+```{r}
+riqueza4<-aggregate(riq$espRed, by=list(riq$Group.1,riq$Group.2), sum)#riqueza de esp por agricultor y or tratamiento
+mediare<-aggregate(riqueza4$x, by=list(riqueza4$Group.2), mean) #riq esp por tratamieno
+mediare
+```
+Desviacion estandard
+```{r}
+stdre<-aggregate(riqueza4$x, by=list(riqueza4$Group.2), sd) #sd
+stdre
+```
+Error estandard
+```{r}
+errorest0re<-stdre[1,2]/(sum(abun$Group.2==0)^(1/2))
+errorest1re<-stdre[2,2]/(sum(abun$Group.2==1)^(1/2))
+errorest0re
+errorest1re
+```
+```{r}
+boxplot(x ~ Group.2, data=riqueza4, xlab="management type", ylab="richness", main="morph richness")
+```
+```{r}
+p <- ggplot(riqueza4, aes(x=Group.2, y=x,fill=Group.2)) + geom_boxplot()+geom_dotplot(binaxis='y',stackdir='center', dotsize=.5)+scale_fill_manual(values=c("#6391cf", "#c45152"))+ theme(legend.position = "none")+ labs(x = "Management type", y = "Morph richness")+ theme(axis.text.x = element_text(size=13))+theme(axis.title=element_text(size=15))
+p
+```
+
+
+ANOVA
+```{r}
+anova.riqesp <- aov(x ~ Group.2, data=riqueza4)
+summary(anova.riqesp)
+anova(anova.riqesp)
+bartlett.test(x ~ Group.2, data=riqueza4) #igualdad de varianzas. debe  ser no significativo
+hist(residuals(anova.riqesp)) #debe ser normal
+shapiro.test(residuals(anova.riqesp)) #normalidad, debe ser no significativo
+```
+
+```{r}
+hist(riqueza4$x, main="Distribuci\u00F3n de riqueza de morfoespecies", ylab="frecuencia", xlab="riqueza")
+```
+##Pitfalls
+Agricultores por numero de familias
+```{r}
+sort(tapply(riq$famPit, riq$Group.1, sum),decreasing=TRUE)
+```
+Agricultores por numero de morfoespecies
+```{r}
+sort(tapply(riq$espPit, riq$Group.1, sum),decreasing=TRUE)
+```
+###riqueza de Familias por tratamiento
+Media
+```{r}
+riqueza5<-aggregate(riq$famPit, by=list(riq$Group.1,riq$Group.2), sum)#riqueza de familias por agricultor y por tratamiento
+mediarf<-aggregate(riqueza5$x, by=list(riqueza5$Group.2), mean) #riq fam por tratamieno
+mediarf
+```
+Desviacion estandard
+```{r}
+stdrf<-aggregate(riqueza5$x, by=list(riqueza5$Group.2), sd) #sd
+stdrf
+```
+Error estandard
+```{r}
+errorest0rf<-stdrf[1,2]/(sum(abun$Group.2==0)^(1/2))
+errorest1rf<-stdrf[2,2]/(sum(abun$Group.2==1)^(1/2))
+errorest0rf
+errorest1rf
+```
+```{r}
+boxplot(x ~ Group.2, data=riqueza5, xlab="tratamientos", ylab="riqueza", main="familias por tratamiento")
+```
+ANOVA
+```{r}
+anova.riqfam <- aov(x ~ Group.2, data=riqueza5)
+summary(anova.riqfam)
+anova(anova.riqfam)
+bartlett.test(x ~ Group.2, data=riqueza5) #igualdad de varianzas. debe  ser no significativo
+hist(residuals(anova.riqfam)) #debe ser normal
+shapiro.test(residuals(anova.riqfam)) #normalidad, debe ser no significativo
+```
+
+```{r}
+hist(riqueza5$x, main="Distribucion de riqueza de familias", ylab="frecuencia", xlab="riqueza")
+```
+
+
+###Riqueza de morfoespecies por tratamiento
+Media
+```{r}
+riqueza6<-aggregate(riq$espPit, by=list(riq$Group.1,riq$Group.2), sum)#riqueza de esp por agricultor y or tratamiento
+mediare<-aggregate(riqueza6$x, by=list(riqueza6$Group.2), mean) #riq esp por tratamieno
+mediare
+```
+Desviacion estandard
+```{r}
+stdre<-aggregate(riqueza6$x, by=list(riqueza6$Group.2), sd) #sd
+stdre
+```
+Error estandard
+```{r}
+errorest0re<-stdre[1,2]/(sum(abun$Group.2==0)^(1/2))
+errorest1re<-stdre[2,2]/(sum(abun$Group.2==1)^(1/2))
+errorest0re
+errorest1re
+```
+
+```{r}
+boxplot(x ~ Group.2, data=riqueza6, xlab="tratamientos", ylab="riqueza", main="morfoespecies por tratamiento")
+```
+ANOVA
+```{r}
+anova.riqesp <- aov(x ~ Group.2, data=riqueza6)
+summary(anova.riqesp)
+anova(anova.riqesp)
+bartlett.test(x ~ Group.2, data=riqueza6) #igualdad de varianzas. debe  ser no significativo
+hist(residuals(anova.riqesp)) #debe ser normal
+shapiro.test(residuals(anova.riqesp)) #normalidad, debe ser no significativo
+```
+
+```{r}
+hist(riqueza6$x, main="Distribucion de riqueza de morfoespecies", ylab="frecuencia", xlab="riqueza")
+```
+
+
+
+
